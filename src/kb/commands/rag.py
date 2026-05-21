@@ -105,7 +105,7 @@ def query(question: str | None, top_k: int, no_sources: bool, json_output: bool)
 
 def _interactive(top_k: int, no_sources: bool):
     """Interactive RAG chat loop."""
-    console.print(Panel("[bold]kb rag chat[/bold] — interactive mode. Type [/bold]/exit[/bold] to quit.", border_style="cyan"))
+    console.print(Panel("[bold]kb rag chat[/bold] — interactive mode. Type /exit to quit.", border_style="cyan"))
 
     with _get_client() as client:
         health = client.health()
