@@ -20,9 +20,9 @@ Output: Installs `kb` CLI. Run `kb --help` to verify.
 
 **Docker**
 ```bash
-docker run --rm ghcr.io/dynamickarabo/karabo-ml kb --help
+docker run --rm ghcr.io/dynamickarabo/karabo-ml --help
 ```
-Output: Help text printed to stdout, container exits.
+Output: CLI help text. Container exits after execution.
 
 **From source**
 ```bash
