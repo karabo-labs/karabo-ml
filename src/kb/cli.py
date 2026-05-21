@@ -25,6 +25,7 @@ from kb.commands.config import config_group
 from kb.commands.drift import drift_group
 from kb.commands.model import model_group
 from kb.commands.rag import rag_group
+from kb.commands.tui import tui_group
 
 console = Console()
 
@@ -44,7 +45,7 @@ class NaturalOrderGroup(click.Group):
 @click.option("--verbose", "-v", is_flag=True, help="Enable debug logging")
 @click.pass_context
 def cli(ctx: click.Context, version: bool, verbose: bool):
-    """⚡ kb — Karabo ML: DevOps RAG Assistant CLI.
+    """\u26a1 kb — Karabo ML: DevOps RAG Assistant CLI.
 
     Query your DevOps documentation with natural language.
     Powered by RAG (Retrieval-Augmented Generation) + Qdrant + OpenRouter.
@@ -76,7 +77,8 @@ def cli(ctx: click.Context, version: bool, verbose: bool):
                 "  [bold]cluster logs[/bold]    View service logs\n"
                 "  [bold]config init[/bold]     Create config\n"
                 "  [bold]config show[/bold]     Show config\n"
-                "  [bold]completions install[/bold]  Install shell completions\n\n"
+                "  [bold]completions install[/bold]  Install shell completions\n"
+                "  [bold]tui[/bold]               Launch terminal dashboard\n\n"
                 'Try: [bold]kb rag query "how to setup ArgoCD"[/bold]',
                 border_style="cyan",
             )
@@ -90,6 +92,7 @@ cli.add_command(drift_group)
 cli.add_command(cluster_group)
 cli.add_command(config_group)
 cli.add_command(completions_group)
+cli.add_command(tui_group)
 
 if __name__ == "__main__":
     cli()
