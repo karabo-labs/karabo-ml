@@ -1,4 +1,4 @@
-# ── PyPI publish ──
+# PyPI publish
 name: Publish to PyPI
 
 on:

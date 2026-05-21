@@ -1,4 +1,4 @@
-# ── GitHub Actions: CI for karabo-ml ──
+# CI for karabo-ml
 name: CI
 
 on:
@@ -51,7 +51,7 @@ jobs:
           kb --help
 
   build-and-push:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     needs: [lint, build-cli]
     runs-on: ubuntu-latest
     permissions:
