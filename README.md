@@ -1,6 +1,6 @@
-# ── kb — Karabo ML CLI ──
+# kb -- Karabo ML CLI
 
-**kb** is a polished CLI tool for DevOps RAG — query documentation, check cluster health, and manage your infrastructure, all from the terminal.
+DevOps RAG CLI. Query documentation, check cluster health, manage infrastructure from the terminal.
 
 ```
 kb rag query "how to setup ArgoCD"
@@ -12,102 +12,143 @@ kb config show
 
 ## Quick Start
 
-### pip install
-
+**pip install**
 ```bash
 pip install karabo-ml
-kb --help
 ```
+Output: Installs `kb` CLI. Run `kb --help` to verify.
 
-### Docker
-
+**Docker**
 ```bash
 docker run --rm ghcr.io/dynamickarabo/karabo-ml kb --help
 ```
+Output: Help text printed to stdout, container exits.
 
-### From source
-
+**From source**
 ```bash
 git clone https://github.com/DynamicKarabo/karabo-ml.git
 cd karabo-ml
 pip install -e .
-kb --help
 ```
+Output: Editable install. Run `kb --help` to verify.
 
 ## Commands
 
-### `kb rag query` — Ask a DevOps question
+### rag -- Documentation queries
 
+**Query** -- Ask a DevOps question against indexed docs.
 ```bash
 kb rag query "How do I set up ArgoCD in a k3s cluster?"
-kb rag query --top-k 10 --json "What is the best way to configure Prometheus?"
 ```
-
-### `kb rag chat` — Interactive mode
+Output: Synthesised answer with citations from indexed documentation.
 
 ```bash
-kb rag query
-# or
-kb rag chat
-# Then type questions interactively. /exit to quit.
+kb rag query --top-k 10 --json "What is the best way to configure Prometheus?"
 ```
+Output: JSON response with top-10 relevant chunks and answer.
 
-### `kb model serve` — Start the RAG API
+**Chat** -- Interactive multi-turn Q&A.
+```bash
+kb rag chat
+```
+Output: Interactive prompt. Type questions, receive answers. `/exit` to quit.
 
+### model -- RAG API lifecycle
+
+**Serve** -- Start the RAG backend (FastAPI + Qdrant).
 ```bash
 kb model serve                 # via docker-compose
 kb model serve --build         # rebuild images first
-kb model serve --profile ingest  # include ingestion
-kb model stop                  # stop services
+kb model serve --profile ingest  # include ingestion pipeline
 ```
+Output: Container logs streaming to terminal. API available at http://localhost:8000.
 
-### `kb drift check` — System health
+**Stop** -- Tear down services.
+```bash
+kb model stop
+```
+Output: Containers stopped and removed.
+
+### drift -- Health checks
+
+**Check** -- Verify API + Qdrant are reachable.
+```bash
+kb drift check
+```
+Output: Health status for each service (OK / FAIL).
+
+**Collections** -- List Qdrant vector collections.
+```bash
+kb drift collections
+```
+Output: Table of collection names and metadata.
+
+### cluster -- Infrastructure monitoring
+
+**Status** -- Show Docker + k3s cluster state.
+```bash
+kb cluster status
+```
+Output: Table with services, status, resource usage.
 
 ```bash
-kb drift check                 # API + Qdrant health
-kb drift collections           # list Qdrant collections
+kb cluster status --json
 ```
+Output: Same data in JSON format.
 
-### `kb cluster status` — Cluster monitoring
-
+**Logs** -- View service logs.
 ```bash
-kb cluster status              # Docker + k3s status
-kb cluster status --json       # JSON output
-kb cluster logs api            # view API logs
+kb cluster logs api
 kb cluster logs qdrant --tail 200
 ```
+Output: Log lines from the specified service. Tail count defaults to 50.
 
-### `kb config` — Configuration
+### config -- Settings management
 
+**Init** -- Create default config file.
 ```bash
-kb config init                 # create ~/.kb/config.yaml
-kb config show                 # view current config
-kb config edit                 # open in $EDITOR
+kb config init
 ```
+Output: Writes `~/.kb/config.yaml` with defaults. No stdout output.
 
-### `kb completions` — Shell completions
-
+**Show** -- Print current effective configuration.
 ```bash
-kb completions install bash    # add to ~/.bashrc
-kb completions install zsh     # add to ~/.zshrc
-kb completions bash            # print completions script
+kb config show
 ```
+Output: YAML-formatted merged config (file + env overrides).
+
+**Edit** -- Open config in `$EDITOR`.
+```bash
+kb config edit
+```
+Output: Opens `~/.kb/config.yaml` in your editor. Saves on write.
+
+### completions -- Shell tab-completions
+
+**Install** -- Register completions permanently.
+```bash
+kb completions install bash    # appends to ~/.bashrc
+kb completions install zsh     # appends to ~/.zshrc
+```
+Output: Completions appended to shell rc file. Restart shell or source to activate.
+
+**Print** -- Output completions script to stdout.
+```bash
+kb completions bash            # print script without installing
+```
+Output: Shell completions script. Pipe to `source` or eval for immediate use.
 
 ## Configuration
 
-Config loaded from (in priority order):
-
+Config loaded in priority order:
 1. `~/.kb/config.yaml` (defaults)
-2. Environment variables (`KB_API_URL`, `KB_QDRANT_URL`, etc.)
-
-Create your config:
+2. Environment variables (overrides file values)
 
 ```bash
 kb config init
 ```
 
 Example `~/.kb/config.yaml`:
-
 ```yaml
 api:
   url: http://localhost:8000
@@ -120,24 +161,17 @@ logging:
   file: ~/.kb/kb.log
 ```
 
+Environment variables map to config keys: `KB_API_URL`, `KB_QDRANT_URL`, `KB_LOG_LEVEL`, etc.
+
 ## Architecture
 
 ```
-┌──────────┐     ┌──────────┐     ┌──────────┐
-│  kb CLI  │────▶│ RAG API  │────▶│  Qdrant  │
-│ (Python) │     │ (FastAPI)│     │(Vectors) │
-└──────────┘     └────┬─────┘     └──────────┘
-                      │
-               ┌──────▼──────┐
-               │  OpenRouter │
-               │   (LLM)     │
-               └─────────────┘
-
-┌──────────┐     ┌──────────┐
-│ Web UI   │────▶│ RAG API  │
-│(HTMX+FA) │     │ (same)   │
-└──────────┘     └──────────┘
+kb CLI  ---- RAG API (FastAPI) ---- Qdrant (vectors)
+          \                      \
+           \-- OpenRouter (LLM)   \-- Web UI (HTMX)
 ```
+
+Data flow: `kb rag query` -> RAG API -> retrieve from Qdrant -> augment prompt -> call OpenRouter -> return answer. Web UI uses same API on the backend.
 
 ## Development
 
