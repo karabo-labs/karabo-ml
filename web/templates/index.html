@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>kb — Karabo ML</title>
+    <script src="https://unpkg.com/htmx.org@2.0.0"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --surface: #13131a;
+            --border: #1e1e2a;
+            --text: #e4e4e7;
+            --text-dim: #71717a;
+            --accent: #06b6d4;
+            --accent-dim: #0891b2;
+            --green: #22c55e;
+            --red: #ef4444;
+            --cyan: #67e8f9;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 720px;
+            padding: 2rem 1rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        header h1 span { color: var(--accent); }
+        header p {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+        .search-form {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .search-form input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            color: var(--text);
+            font-size: 0.95rem;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .search-form input:focus {
+            border-color: var(--accent);
+        }
+        .search-form input::placeholder {
+            color: var(--text-dim);
+        }
+        .search-form button {
+            padding: 0.75rem 1.5rem;
+            background: var(--accent);
+            color: #000;
+            border: none;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .search-form button:hover { opacity: 0.85; }
+        .search-form button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Loading indicator */
+        .loading { display: none; text-align: center; padding: 2rem; color: var(--text-dim); }
+        .loading .spinner {
+            display: inline-block;
+            width: 24px; height: 24px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .htmx-request .loading { display: block; }
+        .htmx-request .search-form button { opacity: 0.5; }
+
+        /* Error */
+        .error {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.3);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            color: var(--red);
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        /* Answer */
+        .answer-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .answer-card .question {
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--cyan);
+        }
+        .answer-card .answer-content {
+            line-height: 1.7;
+            font-size: 0.95rem;
+        }
+        .answer-card .answer-content p { margin-bottom: 0.75rem; }
+        .answer-card .answer-content code {
+            background: rgba(6,182,212,0.1);
+            padding: 0.125rem 0.375rem;
+            border-radius: 0.25rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+        }
+        .answer-card .answer-content pre {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            overflow-x: auto;
+            margin: 0.75rem 0;
+            font-size: 0.85rem;
+        }
+        .meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border);
+        }
+
+        /* Sources */
+        .sources {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1rem 1.5rem;
+        }
+        .sources h3 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-dim);
+            margin-bottom: 0.75rem;
+        }
+        .source-item {
+            display: flex;
+            gap: 0.75rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.85rem;
+        }
+        .source-item:last-child { border-bottom: none; }
+        .source-num {
+            color: var(--accent);
+            font-weight: 600;
+            min-width: 1.5rem;
+        }
+        .source-info { flex: 1; }
+        .source-info .source-title {
+            color: var(--text);
+            font-weight: 500;
+        }
+        .source-info .source-url {
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            word-break: break-all;
+        }
+        .source-snippet {
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-dim);
+        }
+        .empty .big-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        .empty .examples {
+            margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .empty .examples button {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+        }
+        .empty .examples button:hover {
+            border-color: var(--accent);
+            color: var(--text);
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+        }
+        footer a { color: var(--accent-dim); text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚡ kb<span>.</span></h1>
+            <p>karabo-ml — DevOps RAG Assistant</p>
+        </header>
+
+        <form class="search-form" hx-post="/query" hx-target="#results" hx-indicator="#loading">
+            <input type="text" name="question" placeholder="Ask a DevOps question..." value="{{ question }}" autofocus required>
+            <button type="submit">Ask →</button>
+        </form>
+
+        <div id="loading" class="loading">
+            <span class="spinner"></span> Querying RAG pipeline...
+        </div>
+
+        <div id="results">
+            {% if error %}
+            <div class="error">{{ error }}</div>
+            {% endif %}
+
+            {% if answer is not none %}
+            <div class="answer-card">
+                <div class="question">{{ question }}</div>
+                <div class="answer-content">{{ answer | safe }}</div>
+                <div class="meta">
+                    {% if tokens_used %}<span>⚡ {{ tokens_used }} tokens</span>{% endif %}
+                    {% if model %}<span>🧠 {{ model }}</span>{% endif %}
+                    {% if latency_ms %}<span>⏱ {{ "%.0f"|format(latency_ms) }}ms</span>{% endif %}
+                </div>
+            </div>
+
+            {% if sources %}
+            <div class="sources">
+                <h3>📚 Sources ({{ sources|length }})</h3>
+                {% for src in sources %}
+                <div class="source-item">
+                    <div class="source-num">{{ loop.index }}</div>
+                    <div class="source-info">
+                        <div class="source-title">{{ src.title }}</div>
+                        <div class="source-url">{{ src.url }}</div>
+                        <div class="source-snippet">{{ src.snippet[:150] }}{% if src.snippet|length > 150 %}...{% endif %}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="empty">
+                <div class="big-icon">🔍</div>
+                <p>Ask a DevOps question to get started</p>
+                <div class="examples">
+                    <button onclick="document.querySelector('input[name=question]').value='How do I set up ArgoCD in a k3s cluster?'; this.form.requestSubmit()">
+                        How do I set up ArgoCD in a k3s cluster?
+                    </button>
+                    <button onclick="document.querySelector('input[name=question]').value='What is the correct way to configure Prometheus persistent storage?'; this.form.requestSubmit()">
+                        What is the correct way to configure Prometheus persistent storage?
+                    </button>
+                    <button onclick="document.querySelector('input[name=question]').value='How do I create a Docker multi-stage build for a Python app?'; this.form.requestSubmit()">
+                        How do I create a Docker multi-stage build for a Python app?
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <footer>
+            <a href="https://github.com/DynamicKarabo/karabo-ml">karabo-ml</a> · RAG + Qdrant + OpenRouter
+        </footer>
+    </div>
+</body>
+</html>

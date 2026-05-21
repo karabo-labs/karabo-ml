@@ -1,0 +1,41 @@
+# ── k3s: kb-cli (one-off CLI tasks) ──
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kb-cli-config
+  namespace: mlops
+data:
+  KB_API_URL: "http://rag-api:8000"
+  KB_QDRANT_URL: "http://qdrant:6333"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kb-rag-query
+  namespace: mlops
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: kb
+          image: ghcr.io/dynamickarabo/karabo-ml:latest
+          command:
+            - kb
+            - rag
+            - query
+          args:
+            - "How do I configure Prometheus persistent storage in k3s?"
+          envFrom:
+            - configMapRef:
+                name: kb-cli-config
+          env:
+            - name: KB_API_URL
+              value: "http://rag-api:8000"
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"

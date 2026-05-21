@@ -1,0 +1,67 @@
+# ── Karabo ML — kb CLI + Web UI ──
+services:
+  # RAG API backend (from rag-devops-assistant)
+  qdrant:
+    image: qdrant/qdrant:v1.14.0
+    container_name: kb-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - kb-net
+
+  rag-api:
+    image: ghcr.io/dynamickarabo/rag-devops-assistant:latest
+    container_name: kb-api
+    ports:
+      - "8000:8000"
+    environment:
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_COLLECTION: devops_docs
+      LLM_MODEL: ${LLM_MODEL:-openai/gpt-4o-mini}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - kb-net
+
+  # Web UI (FastAPI + HTMX)
+  kb-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: kb-web
+    ports:
+      - "8080:8080"
+    environment:
+      KB_API_URL: http://rag-api:8000
+    depends_on:
+      rag-api:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - kb-net
+
+volumes:
+  qdrant_data:
+
+networks:
+  kb-net:
+    driver: bridge
