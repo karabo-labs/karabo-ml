@@ -7,7 +7,7 @@ on:
 
 jobs:
   runner-test:
-    runs-on: [self-hosted, linux, x64, hetzner]
+    runs-on: [self-hosted, Linux, X64, hetzner]
     steps:
       - uses: actions/checkout@v4
 
