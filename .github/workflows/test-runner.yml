@@ -1,0 +1,44 @@
+name: Self-Hosted Runner Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+
+jobs:
+  runner-test:
+    runs-on: [self-hosted, linux, x64, hetzner]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: System Info
+        run: |
+          echo "=== RUNNER INFO ==="
+          echo "Hostname: $(hostname)"
+          echo "Kernel: $(uname -a)"
+          echo "CPU: $(nproc) cores"
+          echo "RAM: $(free -h | grep Mem | awk '{print $2}')"
+          echo "Disk: $(df -h / | tail -1 | awk '{print $2, $3, $4, $5}')"
+          echo "Docker: $(docker --version 2>/dev/null || echo 'not installed')"
+          echo ""
+          echo "=== WHO AM I ==="
+          whoami
+          echo ""
+          echo "=== ENV ==="
+          echo "RUNNER_NAME: $RUNNER_NAME"
+          echo "RUNNER_OS: $RUNNER_OS"
+          echo "RUNNER_ARCH: $RUNNER_ARCH"
+
+      - name: Docker Test
+        run: |
+          echo "=== DOCKER CHECK ==="
+          docker info --format '{{.ServerVersion}}' 2>/dev/null && echo "Docker OK" || echo "Docker not available (not an issue)"
+          echo ""
+          echo "=== RUNNER VERIFIED ==="
+
+      - name: Python Info
+        run: |
+          python3 --version 2>/dev/null || echo "No python3"
+          pip3 --version 2>/dev/null || echo "No pip3"
+          echo ""
+          echo "Runner vps-runner is alive at karabo-labs!"
